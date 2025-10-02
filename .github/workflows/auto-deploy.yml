@@ -1,0 +1,35 @@
+name: Auto Deploy to Linode
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Linode
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.LINODE_HOST }}
+          username: ${{ secrets.LINODE_USER }}
+          password: ${{ secrets.LINODE_PASSWORD }}
+          port: 22
+          script: |
+            echo "=== Auto-Deploy Started ==="
+            cd /opt/dystopia || cd /root/dystopia || cd ~/dystopia
+            git pull origin master
+            pnpm install
+            cd client
+            pnpm build
+            cd ..
+            cd server
+            pnpm build
+            cd ..
+            pm2 restart all
+            pm2 save
+            echo "=== Deploy Complete ==="
+            pm2 status

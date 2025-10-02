@@ -1,0 +1,102 @@
+====================================
+  ENABLE AUTO-UPDATES FOR DYSTOPIA
+====================================
+
+Two methods to enable automatic deployments:
+
+====================================
+METHOD 1: GitHub Actions (Easiest)
+====================================
+
+Step 1: Add Secrets to GitHub
+------------------------------
+1. Go to: https://github.com/timothyclausennexa/DYSTOPIA/settings/secrets/actions
+2. Click "New repository secret"
+3. Add these 3 secrets:
+
+   Name: LINODE_HOST
+   Value: 50.116.46.238
+
+   Name: LINODE_USER
+   Value: root
+
+   Name: LINODE_PASSWORD
+   Value: Stl2019Stl!!
+
+Step 2: That's It!
+------------------
+Now every time you push to GitHub master branch,
+it will automatically deploy to your server!
+
+The workflow file is already created at:
+.github/workflows/auto-deploy.yml
+
+====================================
+METHOD 2: Server Auto-Pull (Manual)
+====================================
+
+Run this ONCE in your Linode console:
+------------------------------
+
+cd /opt/dystopia
+chmod +x setup-auto-deploy.sh
+./setup-auto-deploy.sh
+
+This sets up:
+- Auto-check for updates every hour
+- Webhook listener for instant deploys
+- Automatic build and restart
+
+====================================
+METHOD 3: Cron Job Only (Simplest)
+====================================
+
+Type this in Linode console:
+------------------------------
+
+crontab -e
+
+Then add this line:
+0 * * * * cd /opt/dystopia && git pull && cd client && pnpm build && cd .. && pm2 restart all
+
+Saves and exits.
+
+Now it checks every hour for updates!
+
+====================================
+WHICH METHOD TO USE?
+====================================
+
+Recommended: Method 1 (GitHub Actions)
+- No server setup needed
+- Just add 3 secrets to GitHub
+- Works immediately
+
+Alternative: Method 3 (Cron)
+- Simplest if GitHub Actions doesn't work
+- Just one line in crontab
+
+====================================
+AFTER SETUP
+====================================
+
+To deploy updates in the future:
+
+1. Make changes on your computer
+2. git add .
+3. git commit -m "your changes"
+4. git push
+
+That's it! Server updates automatically!
+
+====================================
+TEST IT
+====================================
+
+After setting up, make a small change:
+
+1. Edit README.md
+2. git commit -m "test auto-deploy"
+3. git push
+4. Wait 1-2 minutes
+5. Check your server - it should auto-update!
