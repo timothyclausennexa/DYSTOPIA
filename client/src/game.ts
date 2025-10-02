@@ -46,6 +46,8 @@ import type { Localization } from "./ui/localization";
 import { Touch } from "./ui/touch";
 import { UiManager } from "./ui/ui";
 import { UiManager2 } from "./ui/ui2";
+import { buildingSystem } from "./buildingSystem";
+import { chatSystem } from "./chatSystem";
 
 export interface Ctx {
     audioManager: AudioManager;
@@ -146,6 +148,67 @@ export class Game {
         if (IS_DEV) {
             this.editor = new Editor(this.m_config);
         }
+
+        // DYSTOPIA ETERNAL: Listen for building placement commands
+        window.addEventListener('dystopia:placeBuilding', ((e: CustomEvent) => {
+            const { buildingId } = e.detail;
+            console.log(`[DYSTOPIA] Sending building placement command: ${buildingId}`);
+            const msg = new net.PlaceBuildingMsg();
+            msg.buildingType = buildingId;
+            msg.pos = this.activePlayer?.pos || v2.create(0, 0);
+            msg.rotation = 0; // TODO: Get from player direction
+            this.m_sendMessage(net.MsgType.PlaceBuilding, msg, 128);
+        }) as EventListener);
+
+        // DYSTOPIA ETERNAL: Listen for chat message send events
+        window.addEventListener('dystopia:sendChatMessage', ((e: CustomEvent) => {
+            const { channel, message } = e.detail;
+            console.log(`[DYSTOPIA] Sending chat message to ${channel}: ${message}`);
+
+            // Map channel string to ChatChannel enum
+            const channelMap: Record<string, net.ChatChannel> = {
+                'global': net.ChatChannel.Global,
+                'zone': net.ChatChannel.Zone,
+                'clan': net.ChatChannel.Clan,
+                'whisper': net.ChatChannel.Whisper,
+                'system': net.ChatChannel.System
+            };
+
+            const msg = new net.ChatMsg();
+            msg.channel = channelMap[channel] || net.ChatChannel.Global;
+            msg.message = message;
+            msg.senderId = this.activePlayerId || 0;
+            msg.senderName = this.activePlayer?.name || 'Unknown';
+            msg.recipientId = 0; // TODO: Implement whisper target
+            this.m_sendMessage(net.MsgType.Chat, msg, 512);
+        }) as EventListener);
+
+        // DYSTOPIA ETERNAL: Prevent game input when chat is focused
+        window.addEventListener('dystopia:chatFocused', ((e: CustomEvent) => {
+            const { focused } = e.detail;
+            // When chat is focused, game input should be disabled
+            // The input system will check this before processing keys
+            console.log(`[DYSTOPIA] Chat focused: ${focused}`);
+        }) as EventListener);
+
+        // DYSTOPIA ETERNAL: Listen for faction selection events
+        window.addEventListener('dystopia:selectFaction', ((e: CustomEvent) => {
+            const { factionId } = e.detail;
+            console.log(`[DYSTOPIA] Sending faction selection: ${factionId}`);
+
+            // Map faction string to Faction enum
+            const factionMap: Record<string, net.Faction> = {
+                'red': net.Faction.Red,
+                'blue': net.Faction.Blue,
+                'green': net.Faction.Green,
+                'yellow': net.Faction.Yellow,
+                'purple': net.Faction.Purple
+            };
+
+            const msg = new net.SelectFactionMsg();
+            msg.faction = factionMap[factionId] || net.Faction.None;
+            this.m_sendMessage(net.MsgType.SelectFaction, msg, 64);
+        }) as EventListener);
     }
 
     tryJoinGame(
@@ -175,6 +238,7 @@ export class Game {
                     this.connecting = false;
                     this.connected = true;
                     const name = this.m_config.get("playerName")!;
+                    const faction = this.m_config.get("faction") as string | undefined;
                     const joinMessage = new net.JoinMsg();
                     joinMessage.protocol = GameConfig.protocolVersion;
                     joinMessage.matchPriv = matchPriv;
@@ -183,6 +247,7 @@ export class Game {
                     joinMessage.useTouch = device.touch;
                     joinMessage.isMobile = device.mobile || window.mobile!;
                     joinMessage.bot = false;
+                    joinMessage.faction = faction || ""; // Send faction to server
                     joinMessage.loadout = this.m_config.get("loadout")!;
                     this.m_sendMessage(net.MsgType.Join, joinMessage, 8192);
                 };
@@ -461,6 +526,12 @@ export class Game {
             this.m_camera.m_zoom,
             this.m_camera.m_targetZoom,
         );
+
+        // DYSTOPIA ETERNAL: Broadcast camera updates to UI systems
+        window.dispatchEvent(new CustomEvent('dystopia:cameraUpdate', {
+            detail: { camera: this.m_camera }
+        }));
+
         this.m_audioManager.cameraPos = v2.copy(this.m_camera.m_pos);
         if (this.m_input.keyPressed(Key.Escape)) {
             this.m_uiManager.toggleEscMenu();
@@ -1146,6 +1217,13 @@ export class Game {
         this.m_activePlayer.m_setLocalData(msg.activePlayerData);
         if (msg.activePlayerData.weapsDirty) {
             this.m_uiManager.weapsDirty = true;
+        }
+
+        // DYSTOPIA ETERNAL: Sync resources from server to building system UI
+        // @ts-ignore - resources may be added to activePlayerData
+        if (msg.activePlayerData.resources && buildingSystem) {
+            // @ts-ignore
+            buildingSystem.updateResources(msg.activePlayerData.resources);
         }
         if (this.m_spectating) {
             this.m_uiManager.setSpectateTarget(

@@ -432,7 +432,7 @@ export const apiPrivateRouter = hc<PrivateRouteApp>(
     `${Config.gameServer.apiServerUrl}/private`,
     {
         headers: {
-            "survev-api-key": Config.secrets.SURVEV_API_KEY,
+            "dystopia-api-key": Config.secrets.DYSTOPIA_ETERNAL_API_KEY,
         },
     },
 );

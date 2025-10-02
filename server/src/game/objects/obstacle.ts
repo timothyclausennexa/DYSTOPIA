@@ -13,6 +13,46 @@ import type { Building } from "./building";
 import { BaseGameObject, type DamageParams } from "./gameObject";
 import type { Player } from "./player";
 
+// DYSTOPIA ETERNAL: Resource yields for obstacles
+const RESOURCE_YIELDS: Record<string, { resource: string; amount: number }> = {
+    // Trees give wood
+    'tree_01': { resource: 'wood', amount: 10 },
+    'tree_02': { resource: 'wood', amount: 12 },
+    'tree_03': { resource: 'wood', amount: 8 },
+    'tree_04': { resource: 'wood', amount: 15 },
+    'tree_05': { resource: 'wood', amount: 10 },
+    'tree_06': { resource: 'wood', amount: 10 },
+    'tree_07': { resource: 'wood', amount: 10 },
+    'tree_08': { resource: 'wood', amount: 10 },
+    'tree_09': { resource: 'wood', amount: 10 },
+
+    // Rocks give stone
+    'stone_01': { resource: 'stone', amount: 15 },
+    'stone_02': { resource: 'stone', amount: 12 },
+    'stone_03': { resource: 'stone', amount: 18 },
+    'stone_04': { resource: 'stone', amount: 10 },
+    'rock_01': { resource: 'stone', amount: 10 },
+    'rock_02': { resource: 'stone', amount: 8 },
+    'rock_03': { resource: 'stone', amount: 12 },
+    'boulder_01': { resource: 'stone', amount: 20 },
+    'boulder_02': { resource: 'stone', amount: 25 },
+
+    // Metal sources
+    'metal_wall': { resource: 'metal', amount: 5 },
+    'barrel_01': { resource: 'metal', amount: 3 },
+    'crate_01': { resource: 'metal', amount: 2 },
+    'crate_02': { resource: 'metal', amount: 2 },
+    'container_01': { resource: 'metal', amount: 10 },
+    'container_02': { resource: 'metal', amount: 10 },
+
+    // Bushes/plants give food
+    'bush_01': { resource: 'food', amount: 5 },
+    'bush_02': { resource: 'food', amount: 5 },
+    'bush_03': { resource: 'food', amount: 5 },
+    'plant_01': { resource: 'food', amount: 3 },
+    'plant_02': { resource: 'food', amount: 3 },
+};
+
 export class Obstacle extends BaseGameObject {
     override readonly __type = ObjectType.Obstacle;
     bounds: AABB;
@@ -390,6 +430,17 @@ export class Obstacle extends BaseGameObject {
 
         this.scale = this.minScale;
         this.updateCollider();
+
+        // DYSTOPIA ETERNAL: Grant resources to player who destroyed this obstacle
+        if (params.source?.__type === ObjectType.Player) {
+            const player = params.source as Player;
+            const resourceYield = RESOURCE_YIELDS[this.type];
+
+            if (resourceYield && player.dbPlayerId) {
+                player.gatherResource(resourceYield.resource as keyof Player["resources"], resourceYield.amount);
+                this.game.logger.info(`[DYSTOPIA] Player ${player.name} gathered ${resourceYield.amount} ${resourceYield.resource} from ${this.type}`);
+            }
+        }
 
         if (def.destroyType) {
             let destroyType: string;

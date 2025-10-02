@@ -1,5 +1,5 @@
 {
-    "name": "@survev/shared",
+    "name": "@dystopia/shared",
     "private": true,
     "type": "module",
     "dependencies": {

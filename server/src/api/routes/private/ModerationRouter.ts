@@ -22,6 +22,7 @@ import { databaseEnabledMiddleware, validateParams } from "../../auth/middleware
 import { db } from "../../db";
 import { bannedIpsTable, ipLogsTable, matchDataTable, usersTable } from "../../db/schema";
 import { sanitizeSlug } from "../user/auth/authUtils";
+import { Bans, IpLogs } from "../../db/supabase";
 
 export const ModerationRouter = new Hono()
     .use(databaseEnabledMiddleware)
@@ -426,29 +427,21 @@ export async function isBanned(ip: string, isEncoded = false) {
     if (!Config.database.enabled) return undefined;
     try {
         const encodedIp = isEncoded ? ip : hashIp(ip);
-        const banned = await db.query.bannedIpsTable.findFirst({
-            where: eq(bannedIpsTable.encodedIp, encodedIp),
-            columns: {
-                permanent: true,
-                expiresIn: true,
-                reason: true,
-            },
-        });
+        const banned = await Bans.isBanned(encodedIp);
+
         if (banned) {
-            const { expiresIn, permanent, reason } = banned;
-            if (permanent || expiresIn.getTime() > Date.now()) {
+            const { expires_in, permanent, reason } = banned;
+            if (permanent || (expires_in && new Date(expires_in).getTime() > Date.now())) {
                 server.logger.info(`${encodedIp} is banned.`);
                 return {
                     permanent,
-                    expiresIn,
+                    expiresIn: expires_in ? new Date(expires_in) : undefined,
                     reason,
                 };
             }
             // unban the ip
-            await db
-                .delete(bannedIpsTable)
-                .where(eq(bannedIpsTable.encodedIp, encodedIp))
-                .execute();
+            await Bans.unbanIp(encodedIp);
+            server.logger.info(`${encodedIp} has been automatically unbanned.`);
             return undefined;
         }
         return undefined;
@@ -461,17 +454,21 @@ export async function isBanned(ip: string, isEncoded = false) {
 export async function logPlayerIPs(data: SaveGameBody["matchData"]) {
     try {
         const logsData = data.map((matchData) => ({
-            ...matchData,
+            region: matchData.region,
+            gameId: matchData.gameId,
+            mapId: matchData.mapId,
+            username: matchData.username,
+            userId: matchData.userId,
+            playerId: matchData.playerId,
             encodedIp: hashIp(matchData.ip),
-            findGameEncodedIp: hashIp(matchData.findGameIp),
         }));
-        await db.insert(ipLogsTable).values(logsData);
+        await IpLogs.insertBatch(logsData);
     } catch (err) {
         server.logger.error("Failed to log player ip", err);
     }
 }
 
-const salt = Config.secrets.SURVEV_IP_SECRET;
+const salt = Config.secrets.DYSTOPIA_ETERNAL_IP_SECRET;
 export function hashIp(ip: string) {
     return createHash("sha256")
         .update(salt + ip)

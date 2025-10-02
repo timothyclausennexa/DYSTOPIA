@@ -26,12 +26,12 @@ type Routes = "player" | "main";
 //
 class Ads {
     slotIdToPlacement = {
-        survevio_728x90_leaderboard_top: "survevio_728x90_leaderboard",
-        survevio_300x250_leaderboard_top: "survevio_300x250_leaderboard",
-        survevio_300x250_leaderboard_bottom: "survevio_300x250_leaderboard",
-        survevio_728x90_playerprofile_top: "survevio_728x90_playerprofile",
-        survevio_300x250_playerprofile_top: "survevio_300x250_playerprofile",
-        survevio_300x250_playerprofile_bottom: "survevio_300x250_playerprofile",
+        DYSTOPIAio_728x90_leaderboard_top: "DYSTOPIAio_728x90_leaderboard",
+        DYSTOPIAio_300x250_leaderboard_top: "DYSTOPIAio_300x250_leaderboard",
+        DYSTOPIAio_300x250_leaderboard_bottom: "DYSTOPIAio_300x250_leaderboard",
+        DYSTOPIAio_728x90_playerprofile_top: "DYSTOPIAio_728x90_playerprofile",
+        DYSTOPIAio_300x250_playerprofile_top: "DYSTOPIAio_300x250_playerprofile",
+        DYSTOPIAio_300x250_playerprofile_bottom: "DYSTOPIAio_300x250_playerprofile",
     };
     showFreestarAds(_slotIds: string) {}
     getFreestarSlotPlacement(_slotId: string) {}
@@ -59,7 +59,7 @@ export class App {
 
         // Load slug for "My Profile" link
         try {
-            const config = JSON.parse(localStorage.getItem("survev_config")!);
+            const config = JSON.parse(localStorage.getItem("DYSTOPIA_config")!);
             if (config.profile && config.profile.slug) {
                 $("#my-profile")
                     .css("display", "block")
@@ -134,18 +134,18 @@ export class App {
         // show ads
         const slotIds = [];
         if (elAdsLeaderboardTop && elAdsLeaderboardTop.css("display") != "none") {
-            slotIds.push("survevio_728x90_leaderboard_top");
-            slotIds.push("survevio_300x250_leaderboard_top");
+            slotIds.push("DYSTOPIAio_728x90_leaderboard_top");
+            slotIds.push("DYSTOPIAio_300x250_leaderboard_top");
         }
         if (elAdsLeaderboardBottom && elAdsLeaderboardBottom.css("display") != "none") {
-            slotIds.push("survevio_300x250_leaderboard_bottom");
+            slotIds.push("DYSTOPIAio_300x250_leaderboard_bottom");
         }
         if (elAdsPlayerTop && elAdsPlayerTop.css("display") != "none") {
-            slotIds.push("survevio_728x90_playerprofile_top");
-            slotIds.push("survevio_300x250_playerprofile_top");
+            slotIds.push("DYSTOPIAio_728x90_playerprofile_top");
+            slotIds.push("DYSTOPIAio_300x250_playerprofile_top");
         }
         if (elAdsPlayerBottom && elAdsPlayerBottom.css("display") != "none") {
-            slotIds.push("survevio_300x250_playerprofile_bottom");
+            slotIds.push("DYSTOPIAio_300x250_playerprofile_bottom");
         }
         this.adManager.showFreestarAds(slotIds);
         */

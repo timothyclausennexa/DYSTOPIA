@@ -73,7 +73,7 @@ export async function databaseEnabledMiddleware(c: Context, next: Next) {
 }
 
 export async function privateMiddleware(c: Context, next: Next) {
-    if (c.req.header("survev-api-key") !== Config.secrets.SURVEV_API_KEY) {
+    if (c.req.header("dystopia-api-key") !== Config.secrets.DYSTOPIA_ETERNAL_API_KEY) {
         return c.json({ error: "Forbidden" }, 403);
     }
     await next();

@@ -108,10 +108,8 @@ class SDKManager {
                 .css("background-image", "url(./img/discord-promo.png)")
                 .html(`<a href="https://discord.gg/6uRdCdkTPt" target="_blank"></a>`);
         } else {
-            $(".btn-kofi").show();
-            $(".surviv-shirts")
-                .css("background-image", "url(./img/survev-kofi.png)")
-                .html(`<a href="https://ko-fi.com/survev" target="_blank"></a>`);
+            $(".btn-kofi").hide();
+            $(".surviv-shirts").hide();
         }
 
         if (this.isPoki) {

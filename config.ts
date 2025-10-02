@@ -6,7 +6,7 @@ import type { ConfigType, PartialConfig } from "./configType";
 import { TeamMode } from "./shared/gameConfig";
 import { util } from "./shared/utils/util";
 
-export const configFileName = "survev-config.hjson";
+export const configFileName = "dystopia-config.hjson";
 
 export function getConfig(isProduction: boolean, dir: string) {
     const isDev = !isProduction;
@@ -47,17 +47,17 @@ export function getConfig(isProduction: boolean, dir: string) {
         database: {
             enabled: true,
             host: "127.0.0.1",
-            user: "survev",
-            password: "survev",
-            database: "survev",
+            user: "dystopia",
+            password: "dystopia",
+            database: "dystopia",
             port: 5432,
         },
         oauthRedirectURI: "",
         oauthBasePath: "/",
         secrets: {
-            SURVEV_API_KEY: "",
-            SURVEV_LOADOUT_SECRET: "",
-            SURVEV_IP_SECRET: "",
+            DYSTOPIA_ETERNAL_API_KEY: "",
+            DYSTOPIA_ETERNAL_LOADOUT_SECRET: "",
+            DYSTOPIA_ETERNAL_IP_SECRET: "",
         },
         captchaEnabled: false,
         cachingEnabled: false,
@@ -70,12 +70,17 @@ export function getConfig(isProduction: boolean, dir: string) {
             allowMockAccount: isDev,
         },
         defaultItems: {},
+        bots: {
+            enabled: false,
+            count: 10,
+            difficulty: 'medium',
+        },
     };
 
     const dirname = import.meta?.dirname || __dirname;
 
     const configPath = path.join(dirname, dir, configFileName);
-    const legacyConfigPath = path.join(dirname, dir, "survev-config.json");
+    const legacyConfigPath = path.join(dirname, dir, "dystopia-config.json");
 
     let localConfig: PartialConfig = {};
 
@@ -86,7 +91,7 @@ export function getConfig(isProduction: boolean, dir: string) {
     } else if (fs.existsSync(legacyConfigPath)) {
         // migrate old config...
         // todo: remove this after some months :)
-        console.log("Migrating old survev-config.json config file");
+        console.log("Migrating old dystopia-config.json config file");
 
         try {
             migrateConfig(localConfig, legacyConfigPath);
@@ -96,9 +101,9 @@ export function getConfig(isProduction: boolean, dir: string) {
             localConfig = {
                 // always specify default random keys..
                 secrets: {
-                    SURVEV_API_KEY: randomBytes(64).toString("base64"),
-                    SURVEV_LOADOUT_SECRET: randomBytes(32).toString("base64"),
-                    SURVEV_IP_SECRET: randomBytes(32).toString("base64"),
+                    DYSTOPIA_ETERNAL_API_KEY: randomBytes(64).toString("base64"),
+                    DYSTOPIA_ETERNAL_LOADOUT_SECRET: randomBytes(32).toString("base64"),
+                    DYSTOPIA_ETERNAL_IP_SECRET: randomBytes(32).toString("base64"),
                 },
             };
         }
@@ -112,9 +117,9 @@ export function getConfig(isProduction: boolean, dir: string) {
         localConfig = {
             // always specify default random keys..
             secrets: {
-                SURVEV_API_KEY: randomBytes(64).toString("base64"),
-                SURVEV_LOADOUT_SECRET: randomBytes(32).toString("base64"),
-                SURVEV_IP_SECRET: randomBytes(32).toString("base64"),
+                DYSTOPIA_ETERNAL_API_KEY: randomBytes(64).toString("base64"),
+                DYSTOPIA_ETERNAL_LOADOUT_SECRET: randomBytes(32).toString("base64"),
+                DYSTOPIA_ETERNAL_IP_SECRET: randomBytes(32).toString("base64"),
             },
         };
 
@@ -214,11 +219,11 @@ function migrateConfig(localConfig: PartialConfig, legacyConfigPath: string) {
     localConfig.secrets ??= {};
 
     if (oldConfig.apiKey) {
-        localConfig.secrets.SURVEV_API_KEY = oldConfig.apiKey;
+        localConfig.secrets.DYSTOPIA_ETERNAL_API_KEY = oldConfig.apiKey;
         delete oldConfig.encryptLoadoutSecret;
     }
     if (oldConfig.encryptLoadoutSecret) {
-        localConfig.secrets.SURVEV_LOADOUT_SECRET = oldConfig.encryptLoadoutSecret;
+        localConfig.secrets.DYSTOPIA_ETERNAL_LOADOUT_SECRET = oldConfig.encryptLoadoutSecret;
         delete oldConfig.encryptLoadoutSecret;
     }
 
@@ -251,11 +256,11 @@ function migrateConfig(localConfig: PartialConfig, legacyConfigPath: string) {
         delete oldConfig.client;
     }
 
-    if (!localConfig.secrets.SURVEV_API_KEY) {
-        localConfig.secrets.SURVEV_API_KEY = randomBytes(64).toString("base64");
+    if (!localConfig.secrets.DYSTOPIA_ETERNAL_API_KEY) {
+        localConfig.secrets.DYSTOPIA_ETERNAL_API_KEY = randomBytes(64).toString("base64");
     }
-    if (!localConfig.secrets.SURVEV_LOADOUT_SECRET) {
-        localConfig.secrets.SURVEV_LOADOUT_SECRET = randomBytes(32).toString("base64");
+    if (!localConfig.secrets.DYSTOPIA_ETERNAL_LOADOUT_SECRET) {
+        localConfig.secrets.DYSTOPIA_ETERNAL_LOADOUT_SECRET = randomBytes(32).toString("base64");
     }
 
     util.mergeDeep(localConfig, oldConfig);

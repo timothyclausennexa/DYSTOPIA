@@ -43,6 +43,7 @@ import { Config } from "../../config";
 import { IDAllocator } from "../../utils/IDAllocator";
 import { validateUserName } from "../../utils/serverHelpers";
 import type { Game, JoinTokenData } from "../game";
+import { Players } from "../../api/db/supabase";
 import { Group, Team } from "../group";
 import { InventoryManager } from "../inventoryManager";
 import { WeaponManager } from "../weaponManager";
@@ -136,11 +137,16 @@ export class PlayerBarn {
     addPlayer(socketId: string, joinMsg: net.JoinMsg, ip: string) {
         const joinData = this.game.joinTokens.get(joinMsg.matchPriv);
 
-        if (!joinData || joinData.expiresAt < Date.now()) {
+        if (!joinData) {
+            console.error(`[PlayerBarn] No join data found for token: ${joinMsg.matchPriv}, name: ${joinMsg.name}, socketId: ${socketId}`);
             this.game.closeSocket(socketId);
-            if (joinData) {
-                this.game.joinTokens.delete(joinMsg.matchPriv);
-            }
+            return;
+        }
+
+        if (joinData.expiresAt < Date.now()) {
+            console.error(`[PlayerBarn] Join token expired for: ${joinMsg.name}, expired: ${joinData.expiresAt}, now: ${Date.now()}`);
+            this.game.closeSocket(socketId);
+            this.game.joinTokens.delete(joinMsg.matchPriv);
             return;
         }
         this.game.joinTokens.delete(joinMsg.matchPriv);
@@ -615,6 +621,9 @@ export class Player extends BaseGameObject {
     posOld = v2.create(0, 0);
 
     collider: Circle;
+
+    // Bot-specific properties
+    isBot = false;
 
     healthDirty = true;
     boostDirty = true;
@@ -1280,6 +1289,21 @@ export class Player extends BaseGameObject {
 
     name: string;
     isMobile: boolean;
+    faction?: string; // 'red', 'blue', 'green', 'yellow', 'purple'
+
+    // DYSTOPIA ETERNAL: Player persistence
+    dbPlayerId?: number; // Database ID from Supabase players table
+    resources = {
+        wood: 100,
+        stone: 100,
+        metal: 50,
+        uranium: 0,
+        food: 100,
+        water: 100,
+        fuel: 0,
+        dystopia_tokens: 0
+    };
+    resourcesDirty = false;
 
     bot: boolean;
 
@@ -1378,6 +1402,7 @@ export class Player extends BaseGameObject {
         this.userId = userId;
 
         this.isMobile = joinMsg.isMobile;
+        this.faction = joinMsg.faction || undefined; // Store faction from join message
 
         this.weapons = this.weaponManager.weapons;
 
@@ -1446,6 +1471,77 @@ export class Player extends BaseGameObject {
 
         this.weaponManager.showNextThrowable();
         this.recalculateScale();
+
+        // DYSTOPIA ETERNAL: Load player data from database if authenticated
+        if (this.userId) {
+            this.loadPlayerData().catch((err) => {
+                this.game.logger.error(`Failed to load player data for ${this.name}:`, err);
+            });
+        }
+    }
+
+    // DYSTOPIA ETERNAL: Resource management methods
+    async loadPlayerData() {
+        if (!this.userId) return;
+
+        try {
+            // Find player by user_id (from auth system)
+            const playerData = await Players.findByUserId(this.userId);
+            if (playerData) {
+                this.dbPlayerId = playerData.id;
+                this.faction = playerData.faction;
+                this.resources.wood = playerData.wood;
+                this.resources.stone = playerData.stone;
+                this.resources.metal = playerData.metal;
+                this.resources.uranium = playerData.uranium;
+                this.resources.food = playerData.food;
+                this.resources.water = playerData.water;
+                this.resources.fuel = playerData.fuel;
+                this.resources.dystopia_tokens = playerData.dystopia_tokens;
+
+                // Restore position if reconnecting
+                if (playerData.current_x && playerData.current_y) {
+                    this.pos.x = playerData.current_x;
+                    this.pos.y = playerData.current_y;
+                }
+                if (playerData.current_health > 0) {
+                    this.health = playerData.current_health;
+                }
+                if (playerData.current_armor > 0) {
+                    this.boost = playerData.current_armor;
+                }
+
+                this.game.logger.info(`[DYSTOPIA] Loaded player data for ${this.name} (faction: ${this.faction})`);
+            }
+        } catch (error) {
+            this.game.logger.error(`[DYSTOPIA] Failed to load player data:`, error);
+        }
+    }
+
+    gatherResource(resourceType: keyof Player["resources"], amount: number) {
+        if (this.resources[resourceType] !== undefined) {
+            this.resources[resourceType] += amount;
+            this.resourcesDirty = true;
+        }
+    }
+
+    spendResource(resourceType: keyof Player["resources"], amount: number): boolean {
+        if (this.resources[resourceType] >= amount) {
+            this.resources[resourceType] -= amount;
+            this.resourcesDirty = true;
+            return true;
+        }
+        return false;
+    }
+
+    canAfford(costs: Partial<Player["resources"]>): boolean {
+        for (const [resource, cost] of Object.entries(costs)) {
+            const resourceKey = resource as keyof Player["resources"];
+            if (this.resources[resourceKey] < (cost as number)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     update(dt: number): void {
@@ -4309,12 +4405,228 @@ export class Player extends BaseGameObject {
         }
     }
 
+    // DYSTOPIA ETERNAL: Building placement handler with validation
+    async handleBuildingPlacement(msg: net.EmoteMsg) {
+        // Extract building type from itemType (e.g., "building_wall" -> "wall")
+        const buildingType = msg.itemType.replace('building_', '');
+
+        // Rate limiting: prevent building spam (max 1 building per 2 seconds)
+        const now = Date.now();
+        if (this.lastBuildTime && now - this.lastBuildTime < 2000) {
+            this.game.logger.warn(`[DYSTOPIA] Player ${this.name} is building too fast`);
+            return;
+        }
+
+        // Validate building type
+        const validBuildings = ['wall', 'tower', 'turret', 'storage', 'chest', 'vault', 'barracks', 'factory', 'mine', 'farm', 'trap'];
+        if (!validBuildings.includes(buildingType)) {
+            this.game.logger.warn(`[DYSTOPIA] Player ${this.name} attempted invalid building type: ${buildingType}`);
+            return;
+        }
+
+        // Get building costs
+        const costs = this.getBuildingCost(buildingType);
+
+        // Check if player can afford it
+        if (!this.canAfford(costs)) {
+            this.game.logger.warn(`[DYSTOPIA] Player ${this.name} cannot afford ${buildingType}`);
+            return;
+        }
+
+        // Validate position (must be within reasonable range)
+        const maxCoord = 1024; // Max map coordinate
+        if (Math.abs(this.pos.x) > maxCoord || Math.abs(this.pos.y) > maxCoord) {
+            this.game.logger.warn(`[DYSTOPIA] Player ${this.name} attempted building at invalid position`);
+            return;
+        }
+
+        // Check if player is alive
+        if (this.dead) {
+            this.game.logger.warn(`[DYSTOPIA] Dead player ${this.name} attempted to build`);
+            return;
+        }
+
+        // Deduct resources BEFORE placing (optimistic, will rollback on failure)
+        const deducted: Array<[keyof Player["resources"], number]> = [];
+        for (const [resource, amount] of Object.entries(costs)) {
+            this.spendResource(resource as keyof Player["resources"], amount);
+            deducted.push([resource as keyof Player["resources"], amount]);
+        }
+
+        // Place at player position with player direction
+        // Convert player direction to orientation (0-3: right, down, left, up)
+        const angle = Math.atan2(this.dir.y, this.dir.x);
+        const ori = Math.round((angle / (Math.PI / 2)) + 4) % 4;
+
+        const success = await this.game.persistentWorld.placeBuilding(
+            this,
+            buildingType,
+            this.pos,
+            ori
+        );
+
+        if (success) {
+            this.lastBuildTime = now;
+            this.game.logger.info(`[DYSTOPIA] Player ${this.name} placed ${buildingType} at ${this.pos.x},${this.pos.y}`);
+        } else {
+            // Rollback resource deduction on failure
+            for (const [resource, amount] of deducted) {
+                this.addResource(resource, amount);
+            }
+            this.game.logger.warn(`[DYSTOPIA] Failed to place ${buildingType} for ${this.name}, resources refunded`);
+        }
+    }
+
+    private lastBuildTime?: number;
+
+    // DYSTOPIA ETERNAL: Chat message handler
+    handleChatMessage(msg: net.ChatMsg) {
+        // Validate message
+        if (!msg.message || msg.message.length === 0 || msg.message.length > 200) {
+            this.game.logger.warn(`[DYSTOPIA] Player ${this.name} sent invalid chat message`);
+            return;
+        }
+
+        // Rate limiting: prevent spam (max 1 message per second)
+        const now = Date.now();
+        if (this.lastChatTime && now - this.lastChatTime < 1000) {
+            this.game.logger.warn(`[DYSTOPIA] Player ${this.name} is sending chat messages too fast`);
+            return;
+        }
+        this.lastChatTime = now;
+
+        // Log the message
+        const channelName = ['Global', 'Zone', 'Clan', 'Whisper', 'System'][msg.channel] || 'Unknown';
+        this.game.logger.info(`[DYSTOPIA] [${channelName}] ${this.name}: ${msg.message}`);
+
+        // Set sender info
+        msg.senderId = this.__id;
+        msg.senderName = this.name;
+
+        // Broadcast to appropriate players based on channel
+        const recipients = this.getChatRecipients(msg.channel, msg.recipientId);
+
+        for (const recipient of recipients) {
+            if (recipient.__id !== this.__id) {
+                this.game.sendMsg(net.MsgType.Chat, msg, recipient.__id);
+            }
+        }
+    }
+
+    // Helper to determine who receives chat messages
+    private getChatRecipients(channel: net.ChatChannel, recipientId?: number): Player[] {
+        const allPlayers = Array.from(this.game.playerBarn.playerPool.getPool());
+
+        switch (channel) {
+            case net.ChatChannel.Global:
+                // Everyone on the server
+                return allPlayers;
+
+            case net.ChatChannel.Zone:
+                // Players in the same zone (within ~200 units for now)
+                return allPlayers.filter(p => {
+                    if (!p.active || p.dead) return false;
+                    const dist = v2.distance(this.pos, p.pos);
+                    return dist < 200;
+                });
+
+            case net.ChatChannel.Clan:
+                // Players in the same faction
+                return allPlayers.filter(p => {
+                    if (!p.active || p.dead) return false;
+                    return p.faction === this.faction && this.faction !== null;
+                });
+
+            case net.ChatChannel.Whisper:
+                // Specific player
+                if (recipientId) {
+                    const target = allPlayers.find(p => p.__id === recipientId);
+                    return target ? [target] : [];
+                }
+                return [];
+
+            case net.ChatChannel.System:
+                // System messages shouldn't be sent by players
+                return [];
+
+            default:
+                return [];
+        }
+    }
+
+    private lastChatTime?: number;
+
+    // DYSTOPIA ETERNAL: Faction selection handler
+    async selectFaction(msg: net.SelectFactionMsg) {
+        // Map numeric faction enum to string faction name
+        const factionMap: Record<number, string | null> = {
+            [net.Faction.None]: null,
+            [net.Faction.Red]: 'red',
+            [net.Faction.Blue]: 'blue',
+            [net.Faction.Green]: 'green',
+            [net.Faction.Yellow]: 'yellow',
+            [net.Faction.Purple]: 'purple'
+        };
+
+        const newFaction = factionMap[msg.faction];
+
+        // Validate faction
+        if (msg.faction !== net.Faction.None && !newFaction) {
+            this.game.logger.warn(`[DYSTOPIA] Player ${this.name} attempted invalid faction: ${msg.faction}`);
+            return;
+        }
+
+        const oldFaction = this.faction;
+        this.faction = newFaction;
+
+        this.game.logger.info(`[DYSTOPIA] Player ${this.name} changed faction from ${oldFaction || 'None'} to ${newFaction || 'None'}`);
+
+        // Persist to database
+        try {
+            await this.game.persistentWorld.updatePlayerFaction(this.userId, newFaction);
+        } catch (error) {
+            this.game.logger.error(`[DYSTOPIA] Failed to persist faction for ${this.name}:`, error);
+        }
+
+        // Broadcast faction update to the player
+        const updateMsg = new net.SelectFactionMsg();
+        updateMsg.faction = msg.faction;
+        this.game.sendMsg(net.MsgType.SelectFaction, updateMsg, this.__id);
+    }
+
+    // DYSTOPIA ETERNAL: Get building costs
+    getBuildingCost(buildingType: string): Partial<Player["resources"]> {
+        const costs: Record<string, Partial<Player["resources"]>> = {
+            'wall': { wood: 10, stone: 5 },
+            'tower': { wood: 20, stone: 15, metal: 5 },
+            'storage': { wood: 30, stone: 10 },
+            'turret': { metal: 50, uranium: 10 },
+            'barracks': { wood: 50, stone: 30, metal: 10 },
+            'factory': { wood: 40, stone: 40, metal: 30 },
+            'mine': { wood: 25, stone: 50 },
+            'farm': { wood: 30, stone: 15 },
+        };
+        return costs[buildingType] || {};
+    }
+
     emoteFromMsg(msg: net.EmoteMsg) {
         if (this.dead) return;
         if (this.game.map.perkMode && !this.role) return;
         if (this.emoteHardTicker > 0) return;
 
         const emoteMsg = msg as net.EmoteMsg;
+
+        // DYSTOPIA ETERNAL: Building placement command
+        if (emoteMsg.itemType && emoteMsg.itemType.startsWith('building_')) {
+            this.handleBuildingPlacement(emoteMsg);
+            return;
+        }
+
+        // DYSTOPIA ETERNAL: Chat message command
+        if (emoteMsg.type && emoteMsg.type.startsWith('chat_')) {
+            this.handleChatMessage(emoteMsg);
+            return;
+        }
 
         const emoteIdx = this.loadout.emotes.indexOf(emoteMsg.type);
         const emoteDef = GameObjectDefs[emoteMsg.type];

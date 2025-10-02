@@ -1,8 +1,8 @@
-# Hosting your own survev server
-Looking to host your own survev server to mess around or play against friends? This is the place for you.
+# Hosting your own dystopia server
+Looking to host your own dystopia server to mess around or play against friends? This is the place for you.
 
 ## Prerequisites
-Before diving into the setup instructions, make sure you have the correct tools for the job. Hosting a dedicated survev server requires two things:
+Before diving into the setup instructions, make sure you have the correct tools for the job. Hosting a dedicated dystopia server requires two things:
  * SSH access to a VPS (or some other form of dedicated hosting)
  * The ability to open ports on said machine
 
@@ -42,7 +42,7 @@ For security reasons, you cannot view your password as you type it. Type in the 
 If you see a notice notifying you of the machine you have just logged into, congratulations! You have succesfully SSH'd into your server.
 
 ### Dependencies
-[Survev](https://github.com/leia-uwu/survev.git) requires a few dependencies:
+[DYSTOPIA](https://github.com/leia-uwu/survev.git) requires a few dependencies:
  * [Git](https://git-scm.com)
  * [NGINX](https://nginx.org)
  * [Node.js](https://nodejs.org)
@@ -77,8 +77,8 @@ IF you want to have accounts, leaderboards and IP bans, you will have to install
 ```sh
 sudo apt install -y postgresql
 sudo systemctl enable --now postgresql
-sudo -u postgres createuser survev
-sudo -u postgres createdb survev -O survev
+sudo -u postgres createuser dystopia
+sudo -u postgres createdb dystopia -O dystopia
 ```
 
 
@@ -87,14 +87,14 @@ Next, move into `/opt`, clone the repository and traverse into it:
 ```sh
 cd /opt
 git clone https://github.com/leia-uwu/survev.git
-cd survev
+cd dystopia
 ```
 
-Run the initial setup script, this will prompt questions and generate a `survev-config.hjson` file.
+Run the initial setup script, this will prompt questions and generate a `dystopia-config.hjson` file.
 If you want to view the config documentation look at configType.ts file
 
 ```sh
-pnpm survev-setup
+pnpm dystopia-setup
 ```
 
 Build the client & server:
@@ -108,7 +108,7 @@ If you are only hosting a game server you can skip this.
 
 Make sure the build directory has the proper permissions:
 ```sh
-sudo chown -R www-data:www-data /opt/survev/client/dist
+sudo chown -R www-data:www-data /opt/dystopia/client/dist
 ```
 
 First, remove the default file:
@@ -119,7 +119,7 @@ sudo rm /etc/nginx/sites-available/default
 
 Create a new file:
 ```sh
-nano /etc/nginx/sites-available/survev.conf
+nano /etc/nginx/sites-available/dystopia.conf
 ```
 
 And populate it with the following content:
@@ -136,18 +136,18 @@ server {
         etag off;
         if_modified_since off;
         add_header Cache-Control "public, no-transform";
-        root /opt/survev/client/dist;
+        root /opt/dystopia/client/dist;
     }
 
     location ~* \.(html)$ {
         etag on;
         add_header Cache-Control "no-cache";
-        root /opt/survev/client/dist;
+        root /opt/dystopia/client/dist;
     }
 
     # Client build
     location / {
-        root /opt/survev/client/dist;
+        root /opt/dystopia/client/dist;
     }
 
     # API server
@@ -198,7 +198,7 @@ Save the file using `Ctrl + X`, and press `Y` to confirm the file name.
 
 To enable the configuration:
 ```sh
-sudo ln -s /etc/nginx/sites-available/survev.conf /etc/nginx/sites-enabled/survev.conf
+sudo ln -s /etc/nginx/sites-available/dystopia.conf /etc/nginx/sites-enabled/dystopia.conf
 sudo systemctl restart nginx
 ```
 
@@ -209,17 +209,17 @@ which will ensure our application starts at boot and won't terminate if we end o
 If you are only hosting a game server, skip the API server part.
 
 ```sh
-sudo nano /etc/systemd/system/survev-game.service
+sudo nano /etc/systemd/system/dystopia-game.service
 ```
 
 And populate it with the following content:
 ```ini
 [Unit]
-Description=survev dedicated game server.
+Description=dystopia dedicated game server.
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/survev/server
+WorkingDirectory=/opt/dystopia/server
 ExecStart=/usr/bin/pnpm start:game
 Restart=on-failure
 
@@ -231,23 +231,23 @@ Save the file using `Ctrl + X`, and press `Y` to confirm the file name.
 
 Enable the unit:
 ```sh
-sudo systemctl enable --now survev-game
+sudo systemctl enable --now dystopia-game
 ```
 
 Now do the same for the API server if applicable:
 
 ```sh
-sudo nano /etc/systemd/system/survev-api.service
+sudo nano /etc/systemd/system/dystopia-api.service
 ```
 
 And populate it with the following content:
 ```ini
 [Unit]
-Description=survev dedicated API server.
+Description=dystopia dedicated API server.
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/survev/server
+WorkingDirectory=/opt/dystopia/server
 ExecStart=/usr/bin/pnpm start:api
 Restart=on-failure
 
@@ -258,7 +258,7 @@ Save the file using `Ctrl + X`, and press `Y` to confirm the file name.
 
 Enable the unit:
 ```sh
-sudo systemctl enable --now survev-api
+sudo systemctl enable --now dystopia-api
 ```
 
 If you've done everything correctly, you should be able to access the server at `http://youriphere` (ex: `http://1.1.1.1`).
@@ -268,18 +268,18 @@ If you've done everything correctly, you should be able to access the server at 
 Create a systemd unit file for the Bot
 
 ```sh
-sudo nano /etc/systemd/system/survev-bot.service
+sudo nano /etc/systemd/system/dystopia-bot.service
 ```
 
 populate it with
 
 ```sh
 [Unit]
-Description=survev bot.
+Description=dystopia bot.
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/survev/bot
+WorkingDirectory=/opt/dystopia/bot
 ExecStart=/usr/bin/pnpm start
 Restart=on-failure
 
@@ -290,5 +290,5 @@ WantedBy=multi-user.target
 Save and enable the unit:
 
 ```sh
-sudo systemctl enable --now survev-bot
+sudo systemctl enable --now dystopia-bot
 ```

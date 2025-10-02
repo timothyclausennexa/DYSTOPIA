@@ -347,6 +347,12 @@ export enum MsgType {
     UpdatePass,
     AliveCounts,
     PerkModeRoleSelect,
+    /* DYSTOPIA ETERNAL - Persistent World Features */
+    Chat,
+    PlaceBuilding,
+    SelectFaction,
+    TerritoryUpdate,
+    PlayerUIUpdate,
 }
 
 export enum PickupMsgType {
@@ -377,6 +383,9 @@ export { MapMsg } from "./mapMsg";
 export { PerkModeRoleSelectMsg } from "./perkModeRoleSelectMsg";
 export { PickupMsg } from "./pickupMsg";
 export { PlayerStatsMsg } from "./playerStatsMsg";
+export { ChatMsg, ChatChannel } from "./chatMsg";
+export { PlaceBuildingMsg } from "./placeBuildingMsg";
+export { SelectFactionMsg, Faction } from "./selectFactionMsg";
 export { RoleAnnouncementMsg } from "./roleAnnouncementMsg";
 export { SpectateMsg } from "./spectateMsg";
 export { getPlayerStatusUpdateRate, UpdateMsg } from "./updateMsg";

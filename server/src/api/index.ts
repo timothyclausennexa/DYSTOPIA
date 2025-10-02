@@ -31,6 +31,7 @@ import { PrivateRouter } from "./routes/private/private";
 import { StatsRouter } from "./routes/stats/StatsRouter";
 import { AuthRouter } from "./routes/user/AuthRouter";
 import { UserRouter } from "./routes/user/UserRouter";
+import DystopiaAuthRouter from "./routes/auth";
 
 export type Context = {
     Variables: {
@@ -74,6 +75,7 @@ app.use(
 
 app.route("/api/user/", UserRouter);
 app.route("/api/auth/", AuthRouter);
+app.route("/api/dystopia-auth/", DystopiaAuthRouter); // Simple username/password auth
 app.route("/api/", StatsRouter);
 app.route("/private/", PrivateRouter);
 
@@ -244,6 +246,6 @@ new Cron("0 0 * * *", async () => {
     }
 });
 
-server.logger.info(`Survev API Server v${version} - GIT ${GIT_VERSION}`);
+server.logger.info(`DYSTOPIA API Server v${version} - GIT ${GIT_VERSION}`);
 server.logger.info(`Listening on ${Config.apiServer.host}:${Config.apiServer.port}`);
 server.logger.info("Press Ctrl+C to exit.");

@@ -124,6 +124,9 @@ export default defineConfig(({ mode }) => {
         },
         resolve: {
             extensions: [".ts", ".js"],
+            alias: {
+                "../shared": resolve(import.meta.dirname, "../shared"),
+            },
         },
         define: {
             GAME_REGIONS: Config.regions,

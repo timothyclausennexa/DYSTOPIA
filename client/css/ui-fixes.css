@@ -1,0 +1,237 @@
+/**
+ * DYSTOPIA UI Fixes
+ * Clean, professional UI improvements
+ */
+
+/* Screen State Management Classes */
+.app-state-login #login-screen {
+  display: block !important;
+}
+
+.app-state-login #main-menu,
+.app-state-login #news-wrapper,
+.app-state-login #pass-wrapper {
+  display: none !important;
+}
+
+.app-state-menu #main-menu {
+  display: block !important;
+}
+
+.app-state-menu #login-screen {
+  display: none !important;
+}
+
+.app-state-game #start-menu-wrapper {
+  display: none !important;
+}
+
+.app-state-game #game-area-wrapper {
+  display: block !important;
+}
+
+/* Login Screen Improvements */
+#login-screen {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+#login-backdrop {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Auth Input Focus States */
+#auth-username:focus,
+#auth-password:focus {
+  border-color: rgba(0, 217, 255, 0.8) !important;
+  box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.2), 0 4px 20px rgba(123, 66, 255, 0.25) !important;
+}
+
+/* Button Hover States */
+#btn-auth-login:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 217, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+#btn-auth-signup:hover {
+  background: rgba(123, 66, 255, 0.25) !important;
+  border-color: rgba(123, 66, 255, 0.8) !important;
+  transform: translateY(-2px);
+}
+
+/* Deploy Button States */
+#btn-deploy-now {
+  transition: all 0.3s ease;
+}
+
+#btn-deploy-now:hover:not(.btn-disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 255, 135, 0.65), inset 0 2px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+#btn-deploy-now.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  filter: grayscale(0.5);
+}
+
+#btn-deploy-now.btn-disabled:hover {
+  transform: none;
+}
+
+/* Faction Select States */
+#faction-select {
+  transition: all 0.3s ease;
+}
+
+#faction-select:focus {
+  border-color: rgba(255, 215, 0, 1) !important;
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3), 0 5px 25px rgba(255, 215, 0, 0.35) !important;
+}
+
+#faction-select.has-selection {
+  border-color: rgba(0, 255, 135, 0.7) !important;
+  box-shadow: 0 5px 25px rgba(0, 255, 135, 0.35) !important;
+}
+
+#faction-select.error {
+  border-color: rgba(255, 0, 107, 0.7) !important;
+  box-shadow: 0 5px 25px rgba(255, 0, 107, 0.35) !important;
+  animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+/* Server Select Focus */
+#server-select-main:focus {
+  border-color: rgba(0, 217, 255, 0.8) !important;
+  box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.2), 0 4px 20px rgba(0, 217, 255, 0.25) !important;
+}
+
+/* Player Name Input */
+#player-name-input-solo:focus {
+  border-color: rgba(123, 66, 255, 0.8) !important;
+  box-shadow: 0 0 0 3px rgba(123, 66, 255, 0.2), 0 4px 20px rgba(123, 66, 255, 0.25) !important;
+}
+
+/* Logout Button */
+#btn-auth-logout:hover {
+  background: rgba(255, 0, 107, 0.35) !important;
+  border-color: rgba(255, 0, 107, 1) !important;
+  box-shadow: 0 6px 25px rgba(255, 0, 107, 0.45) !important;
+  transform: translateY(-1px);
+}
+
+/* How to Play Button */
+#btn-help:hover {
+  background: rgba(10, 10, 20, 0.8) !important;
+  border-color: rgba(123, 66, 255, 0.6) !important;
+  box-shadow: 0 6px 20px rgba(123, 66, 255, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+/* Remove animated backgrounds that cause performance issues */
+.animated-glow {
+  animation: none !important;
+}
+
+/* Ensure news block respects state management */
+#news-wrapper {
+  display: block !important;
+}
+
+#news-block {
+  display: none;
+}
+
+.app-state-menu #news-block {
+  display: block !important;
+}
+
+/* Loading States */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal-content);
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(0, 217, 255, 0.2);
+  border-top-color: rgba(0, 217, 255, 1);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error Message Styling */
+#auth-message.error {
+  color: #FF006B !important;
+  text-shadow: 0 2px 8px rgba(255, 0, 107, 0.6) !important;
+}
+
+#auth-message.success {
+  color: #00FF87 !important;
+  text-shadow: 0 2px 8px rgba(0, 255, 135, 0.6) !important;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  #login-screen {
+    max-width: 90% !important;
+    margin: 0 auto !important;
+  }
+
+  #main-menu {
+    max-width: 100% !important;
+    padding: 0 15px !important;
+  }
+}
+
+/* Accessibility improvements */
+*:focus-visible {
+  outline: 2px solid rgba(0, 217, 255, 0.8);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid rgba(0, 217, 255, 0.8);
+  outline-offset: 2px;
+}
+
+/* Remove performance-heavy animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "name": "@survev/client",
+  "name": "@dystopia/client",
   "private": true,
   "type": "module",
   "scripts": {

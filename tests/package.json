@@ -1,5 +1,5 @@
 {
-  "name": "@survev/tests",
+  "name": "@dystopia/tests",
   "private": true,
   "type": "module",
   "scripts": {

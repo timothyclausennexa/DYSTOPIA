@@ -12,10 +12,10 @@ async function dropDatabase() {
 
     try {
         await pool.query(
-            `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'survev'`,
+            `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'dystopia'`,
         );
-        await pool.query(`DROP DATABASE IF EXISTS survev`);
-        await pool.query(`CREATE DATABASE survev OWNER survev`);
+        await pool.query(`DROP DATABASE IF EXISTS dystopia`);
+        await pool.query(`CREATE DATABASE dystopia OWNER dystopia`);
         console.log("Database wiped successfully");
     } catch (error) {
         console.error("Error dropping database:", error);

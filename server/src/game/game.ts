@@ -31,6 +31,8 @@ import { ProjectileBarn } from "./objects/projectile";
 import { SmokeBarn } from "./objects/smoke";
 import { PluginManager } from "./pluginManager";
 import { Profiler } from "./profiler";
+import { PersistentWorldManager } from "./persistentWorld";
+import { BotManager } from "./botManager";
 
 export interface JoinTokenData {
     expiresAt: number;
@@ -100,6 +102,12 @@ export class Game {
     map: GameMap;
     gas: Gas;
 
+    // DYSTOPIA ETERNAL: Persistent World Manager
+    persistentWorld!: PersistentWorldManager;
+
+    // DYSTOPIA ETERNAL: Bot Manager (Practice Mode)
+    botManager: BotManager;
+
     now!: number;
 
     perfTicker = 0;
@@ -143,12 +151,16 @@ export class Game {
         this.explosionBarn = new ExplosionBarn(this);
         this.planeBarn = new PlaneBarn(this);
         this.explosionBarn = new ExplosionBarn(this);
+        this.botManager = new BotManager(this);
         this.planeBarn = new PlaneBarn(this);
         this.mapIndicatorBarn = new MapIndicatorBarn();
 
         this.gas = new Gas(this);
 
         this.modeManager = new GameModeManager(this);
+
+        // DYSTOPIA ETERNAL: Initialize Persistent World
+        this.persistentWorld = new PersistentWorldManager(this);
 
         if (this.map.factionMode) {
             for (let i = 1; i <= this.map.mapDef.gameMode.factions!; i++) {
@@ -162,8 +174,25 @@ export class Game {
         this.map.init();
         this.pluginManager.emit("gameCreated", this);
 
+        // DYSTOPIA ETERNAL: Load persistent world data
+        try {
+            await this.persistentWorld.init();
+            this.logger.info("[DYSTOPIA] Persistent world initialized");
+        } catch (error) {
+            this.logger.error("[DYSTOPIA] Failed to initialize persistent world:", error);
+        }
+
         this.allowJoin = true;
         this.logger.info(`Created in ${Date.now() - this.start} ms`);
+
+        // Enable practice mode based on configuration
+        if (Config.bots?.enabled) {
+            this.botManager.enablePracticeMode(
+                Config.bots.count || 10,
+                Config.bots.difficulty || 'medium'
+            );
+            this.logger.info(`[DYSTOPIA] Practice mode enabled with ${Config.bots.count} ${Config.bots.difficulty} bots`);
+        }
 
         this.updateData();
     }
@@ -206,6 +235,11 @@ export class Game {
         this.playerBarn.update(dt);
         this.profiler.endSample();
 
+        // Update bots (practice mode)
+        this.profiler.addSample("bots");
+        this.botManager.update(dt);
+        this.profiler.endSample();
+
         this.profiler.addSample("map");
         this.map.update(dt);
         this.profiler.endSample();
@@ -244,6 +278,11 @@ export class Game {
 
         this.profiler.addSample("planes");
         this.planeBarn.update(dt);
+        this.profiler.endSample();
+
+        // DYSTOPIA ETERNAL: Territory capture system
+        this.profiler.addSample("territories");
+        this.updateTerritoryCapture(dt);
         this.profiler.endSample();
 
         const tickTime = performance.now() - this.now;
@@ -373,6 +412,10 @@ export class Game {
                 msg = new net.EmoteMsg();
                 msg.deserialize(stream);
                 break;
+            case net.MsgType.SelectFaction:
+                msg = new net.SelectFactionMsg();
+                msg.deserialize(stream);
+                break;
             case net.MsgType.DropItem:
                 msg = new net.DropItemMsg();
                 msg.deserialize(stream);
@@ -434,6 +477,10 @@ export class Game {
             }
             case net.MsgType.Emote: {
                 player.emoteFromMsg(msg as net.EmoteMsg);
+                break;
+            }
+            case net.MsgType.SelectFaction: {
+                player.selectFaction(msg as net.SelectFactionMsg);
                 break;
             }
             case net.MsgType.DropItem: {
@@ -518,6 +565,53 @@ export class Game {
             startedTime: this.startedTime,
             stopped: this.stopped,
         });
+    }
+
+    // DYSTOPIA ETERNAL: Territory capture system
+    updateTerritoryCapture(dt: number): void {
+        // Check each territory for players
+        for (const [territoryId, territory] of this.persistentWorld.territories) {
+            // Find players in territory radius
+            const playersInTerritory = this.playerBarn.livingPlayers.filter(p => {
+                if (p.dead || p.disconnected) return false;
+                const dist = v2.distance(p.pos, territory.centerPos);
+                return dist <= territory.radius;
+            });
+
+            if (playersInTerritory.length === 0) continue;
+
+            // Count by faction
+            const factionCounts = new Map<string, number>();
+            for (const player of playersInTerritory) {
+                if (player.faction) {
+                    factionCounts.set(player.faction, (factionCounts.get(player.faction) || 0) + 1);
+                }
+            }
+
+            // Determine dominant faction
+            let dominantFaction: string | null = null;
+            let maxCount = 0;
+            for (const [faction, count] of factionCounts) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    dominantFaction = faction;
+                }
+            }
+
+            // Apply capture progress (1% per player per second)
+            if (dominantFaction && maxCount > 0) {
+                const captureAmount = maxCount * dt;
+                // Use first player of dominant faction as capturer
+                const capturer = playersInTerritory.find(p => p.faction === dominantFaction);
+                if (capturer) {
+                    this.persistentWorld.captureTerritoryProgress(
+                        territoryId,
+                        capturer,
+                        captureAmount
+                    );
+                }
+            }
+        }
     }
 
     stop(): void {

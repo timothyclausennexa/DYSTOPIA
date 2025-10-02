@@ -8,6 +8,7 @@ export class JoinMsg implements AbstractMsg {
     useTouch = false;
     isMobile = false;
     bot = false;
+    faction = ""; // 'red', 'blue', 'green', 'yellow', 'purple'
     loadout = {
         outfit: "",
         melee: "",
@@ -25,6 +26,7 @@ export class JoinMsg implements AbstractMsg {
         s.writeBoolean(this.useTouch);
         s.writeBoolean(this.isMobile);
         s.writeBoolean(this.bot);
+        s.writeString(this.faction, 20); // Faction name (max 20 chars)
 
         s.writeGameType(this.loadout.outfit);
         s.writeGameType(this.loadout.melee);
@@ -45,6 +47,7 @@ export class JoinMsg implements AbstractMsg {
         this.useTouch = s.readBoolean();
         this.isMobile = s.readBoolean();
         this.bot = s.readBoolean();
+        this.faction = s.readString(20); // Faction name
 
         this.loadout.outfit = s.readGameType();
         this.loadout.melee = s.readGameType();

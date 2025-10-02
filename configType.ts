@@ -73,12 +73,12 @@ export interface ConfigType {
      *     regions: {
      *         na: {
      *             https: true
-     *             address: "na.mycoolsurvevserver.io"
+     *             address: "na.mycooldystopiaserver.io"
      *             l10n: "index-north-america"
      *         }
      *         sa: {
      *             https: true
-     *             address: "sa.mycoolsurvevserver.io"
+     *             address: "sa.mycooldystopiaserver.io"
      *             l10n: "index-south-america"
      *         }
      *     }
@@ -209,11 +209,11 @@ export interface ConfigType {
 
         /** @default "127.0.0.1" */
         host: string;
-        /** @default "survev" */
+        /** @default "dystopia" */
         user: string;
-        /** @default "survev" */
+        /** @default "dystopia" */
         password: string;
-        /** @default "survev" */
+        /** @default "dystopia" */
         database: string;
         /** @default 5432 */
         port: number;
@@ -221,7 +221,7 @@ export interface ConfigType {
 
     /**
      * Used for account oauth2 redirects (https://www.oauth.com/oauth2-servers/redirect-uris/).
-     * Should be the full hosted website url, example: https://mycoolsurvevserver.io.
+     * Should be the full hosted website url, example: https://mycooldystopiaserver.io.
      */
     oauthRedirectURI: string;
 
@@ -240,7 +240,7 @@ export interface ConfigType {
          * API key used for game server and API server to communicate.
          * A default random one is generated when creating the config file
          */
-        SURVEV_API_KEY: string;
+        DYSTOPIA_ETERNAL_API_KEY: string;
 
         /**
          * Used to encrypt the loadout before sending it to the client, So the game server can read it back.
@@ -248,12 +248,12 @@ export interface ConfigType {
          * Should be 32 bytes base64 string, a default one can be generated when running the setup script.
          * Can also run `openssl rand -base64 32` to generate one
          */
-        SURVEV_LOADOUT_SECRET: string;
+        DYSTOPIA_ETERNAL_LOADOUT_SECRET: string;
 
         /**
          * Used to encode IP addresses on the database
          */
-        SURVEV_IP_SECRET: string;
+        DYSTOPIA_ETERNAL_IP_SECRET: string;
 
         /**
          * Discord client ID.
@@ -307,7 +307,7 @@ export interface ConfigType {
          */
         AIP_ID?: string;
         /**
-         * Adin play placement ID (used to identify ad banners), can be just "survev-io".
+         * Adin play placement ID (used to identify ad banners), can be just "dystopia-io".
          *
          * NOTE: This is only used by the client so must be present at the build time!
          */
@@ -403,6 +403,24 @@ export interface ConfigType {
          * ammo, grenades, healing items and scopes
          */
         inventory?: Record<string, number>;
+    };
+
+    /**
+     * Practice Mode Bots Configuration
+     */
+    bots?: {
+        /**
+         * If practice mode bots are enabled
+         */
+        enabled: boolean;
+        /**
+         * Number of bots to spawn (max 20)
+         */
+        count: number;
+        /**
+         * Bot difficulty level
+         */
+        difficulty: 'easy' | 'medium' | 'hard';
     };
 }
 

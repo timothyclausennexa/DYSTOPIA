@@ -1,0 +1,113 @@
+/**
+ * DYSTOPIA Z-Index Scale
+ * Central authority for all z-index values across the application
+ * DO NOT use arbitrary z-index values elsewhere in the codebase
+ */
+
+:root {
+  /* Z-Index Scale */
+  --z-base: 1;
+  --z-background: 10;
+  --z-content: 100;
+  --z-header: 200;
+  --z-dropdown: 300;
+  --z-sticky: 400;
+  --z-menu-screen: 500;
+  --z-fixed: 600;
+  --z-modal-backdrop: 1000;
+  --z-modal-content: 1001;
+  --z-popover: 1500;
+  --z-tooltip: 2000;
+  --z-notification: 2500;
+  --z-debug: 9000;
+  --z-preroll: 10000;
+}
+
+/* Base Elements */
+#game-area-wrapper {
+  z-index: var(--z-base);
+}
+
+/* Menu Screens */
+#start-menu-wrapper {
+  z-index: var(--z-menu-screen);
+  position: relative;
+}
+
+#login-screen {
+  z-index: var(--z-modal-content);
+  position: relative;
+}
+
+#login-backdrop {
+  z-index: var(--z-modal-backdrop);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+#main-menu {
+  z-index: var(--z-content);
+  position: relative;
+}
+
+#news-wrapper,
+#news-block {
+  z-index: var(--z-content);
+  position: relative;
+}
+
+/* Modals */
+.modal-backdrop {
+  z-index: var(--z-modal-backdrop) !important;
+}
+
+.modal,
+[id*="modal-"] {
+  z-index: var(--z-modal-content) !important;
+}
+
+#modal-notification {
+  z-index: var(--z-notification) !important;
+}
+
+/* Dropdowns */
+select.server-select,
+#faction-select {
+  z-index: var(--z-dropdown);
+  position: relative;
+}
+
+/* Preroll (should block everything) */
+#preroll-wrapper {
+  z-index: var(--z-preroll) !important;
+}
+
+/* Tooltips */
+.tooltip,
+.copy-toast {
+  z-index: var(--z-tooltip);
+}
+
+/* In-game UI */
+#ui-center {
+  z-index: var(--z-fixed);
+}
+
+#ui-role-menu-wrapper {
+  z-index: calc(var(--z-fixed) + 1);
+}
+
+/* Fix absurd existing values */
+#modal-screen-block {
+  z-index: var(--z-modal-backdrop) !important;
+}
+
+#modal-item-confirm {
+  z-index: var(--z-modal-content) !important;
+}

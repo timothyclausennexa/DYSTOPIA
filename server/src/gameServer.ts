@@ -150,7 +150,7 @@ app.post("/api/find_game", (res, req) => {
         res.aborted = true;
     });
 
-    if (req.getHeader("survev-api-key") !== Config.secrets.SURVEV_API_KEY) {
+    if (req.getHeader("dystopia-api-key") !== Config.secrets.DYSTOPIA_ETERNAL_API_KEY) {
         forbidden(res);
         return;
     }
@@ -367,7 +367,7 @@ setInterval(() => {
 }, 20 * 1000);
 
 app.listen(Config.gameServer.host, Config.gameServer.port, () => {
-    server.logger.info(`Survev Game Server v${version} - GIT ${GIT_VERSION}`);
+    server.logger.info(`DYSTOPIA Game Server v${version} - GIT ${GIT_VERSION}`);
     server.logger.info(
         `Listening on ${Config.gameServer.host}:${Config.gameServer.port}`,
     );

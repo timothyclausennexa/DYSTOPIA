@@ -165,18 +165,18 @@ a:active {
 
 #start-row-header {
   /* Main menu logo, don't forget there's also game over logo in game.css */
-  background-image: url(/img/survev_logo_full.png);
+  background-image: url(/img/DYSTOPIA_logo_full.png);
   background-repeat: no-repeat;
-  /* In case of logo change, update this value to width divided by 2 ceiled  */
-  background-size: 396px;
+  /* Large banner logo that stretches across the top */
+  background-size: 800px;
   background-position: center;
-  height: 140px;
+  height: 180px;
   margin: auto;
   margin-top: -10px;
   margin-bottom: 42px;
   position: relative;
-  /* In case of logo change, update this value to width divided by 2 ceiled  */
-  width: 396px;
+  /* Wide banner format */
+  width: 800px;
 }
 
 @media (max-width: 850px), (max-width: 900px) and (min-resolution: 3dppx) {

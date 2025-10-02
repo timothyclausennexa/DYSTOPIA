@@ -10,6 +10,7 @@ export const zFindGameBody = z.object({
     autoFill: z.boolean(),
     gameModeIdx: z.number(),
     turnstileToken: z.string().optional(),
+    faction: z.string().optional(), // 'red', 'blue', 'green', 'yellow', 'purple'
 });
 
 export type FindGameBody = z.infer<typeof zFindGameBody>;

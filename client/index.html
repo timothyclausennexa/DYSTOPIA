@@ -30,6 +30,8 @@
 
     <link href="css/app.css" rel="stylesheet">
     <link href="css/game.css" rel="stylesheet">
+    <link href="css/z-index.css" rel="stylesheet">
+    <link href="css/ui-fixes.css" rel="stylesheet">
   </head>
   <body>
     <div id="preroll-wrapper">
@@ -835,6 +837,9 @@
               </div>
               <div class="play-button-container">
 
+                <!-- LOGIN BACKDROP -->
+                <div id="login-backdrop" style="display: none;"></div>
+
                 <!-- LOGIN SCREEN -->
                 <div id="login-screen" style="display: none; max-width: 480px; margin: 0 auto;">
                   <div style="text-align: center; margin-bottom: 35px;">
@@ -1121,9 +1126,9 @@
                   </div>
                 </div>
               </div>
-              <div id="news-wrapper" style="display: block!important;">
+              <div id="news-wrapper">
                 <div class="right-column-toggle pass-toggle" style="display: none!important;"></div>
-                <div id="news-block" class="menu-block" style="display: none;">
+                <div id="news-block" class="menu-block">
                   <div id="news">
                     <h3 class="news-header">What's New!</h3>
                     <div id="news-current" data-date="2025-10-01">

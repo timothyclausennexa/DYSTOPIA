@@ -26,6 +26,7 @@ import {
 import { getRedisClient } from "../../cache";
 import { leaderboardCache } from "../../cache/leaderboard";
 import { db } from "../../db";
+import { MatchData, IpLogs } from "../../db/supabase";
 import {
     itemsTable,
     type MatchDataTable,
@@ -120,7 +121,7 @@ export const PrivateRouter = new Hono<Context>()
 
         await leaderboardCache.invalidateCache(matchData);
 
-        await db.insert(matchDataTable).values(matchData);
+        await MatchData.insertBatch(matchData);
         await logPlayerIPs(matchData);
         server.logger.info(`Saved game data for ${matchData[0].gameId}`);
         return c.json({}, 200);

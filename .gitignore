@@ -1,41 +1,63 @@
-reference/
+# DYSTOPIA .gitignore
+# Professional ignore patterns for a clean repository
 
-client/atlas-builder/pngs
-
-# old config files
-resurviv-config.json
-survev-config.json
-
-# new one
-survev-config.hjson
-
-# env file
-.env
-
-# sqlite db
-*.db
-
-# Compiled source
-dist/
-
-# Node modules
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
 
+# Production builds
+dist/
+build/
+client/dist/
+server/dist/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# Configuration files with secrets
+dystopia-config.hjson
+resurviv-config.json
+dystopia-config.json
+
+# User data
 user-data/
-.idea/
 
-# General
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~
+
+# OS files
+Thumbs.db
 .DS_Store
 .AppleDouble
 .LSOverride
-
-# Icon must end with two \r
-Icon
-
-# Thumbnails
 ._*
-
-# Files that might appear in the root of a volume
+Icon
 .DocumentRevisions-V100
 .fseventsd
 .Spotlight-V100
@@ -43,27 +65,146 @@ Icon
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
-
-# Directories potentially created on remote AFP share
 .AppleDB
 .AppleDesktop
 Network Trash Folder
 Temporary Items
 .apdisk
 
-# VS Code
-.vscode/
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
+# Testing
+/coverage
+.nyc_output
+*.lcov
 
-# Local History for Visual Studio Code
+# Build caches
+.cache
+.parcel-cache
+.vite
+.atlas-cache
+.vite-temp
+*.cache
+reference/
+client/atlas-builder/pngs
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.backup
+~*
+todo.md
+
+# Archives
+*.tar.gz
+*.zip
+*.rar
+*.7z
+dist.tar.gz
+dystopia.tar.gz
+dystopia-update.tar.gz
+update.tar.gz
+
+# Deployment files (keep examples, ignore actual)
+docker-compose.override.yml
+
+# PM2
+.pm2
+ecosystem.config.js
+
+# IDE
 .history/
-
-# Built Visual Studio Code Extensions
 *.vsix
 
-todo.md
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# TypeScript
+*.tsbuildinfo
+.tscache
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Serverless
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Documentation (auto-generated or temporary)
+# Keep important docs, remove temp session notes
+COMPLETION_SUMMARY.md
+DEPLOYMENT_SUCCESS*.md
+SESSION_SUMMARY.md
+BOT_IMPROVEMENTS_SUMMARY.md
+*_SESSION_*.md
+PERFECTION_*.md
+LOCAL_STATUS.md
+LOCAL_DEPLOYMENT_STATUS.md
+IMPLEMENTATION_COMPLETE.md
+*_IMPLEMENTATION_*.md
+INTEGRATION_COMPLETE.md
+PRACTICE_MODE*.md
+NEW_FEATURES*.md
+FEATURES_*.md
+FINAL_*.md
+STEP*.txt
+
+# Config backups
+*.backup.ts
+*.backup.js
+
+# SSL/TLS certificates (never commit these!)
+*.pem
+*.key
+*.crt
+*.cert
+
+# Monitoring
+prometheus_data/

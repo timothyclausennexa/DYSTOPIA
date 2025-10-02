@@ -1,10 +1,10 @@
 {
-  "name": "survev",
-  "version": "0.1.23",
+  "name": "dystopia-eternal",
+  "version": "1.0.0",
   "type": "module",
-  "description": "Open Source Surviv.io Server",
+  "description": "⚔️ DYSTOPIA: ETERNAL BATTLEGROUND - Where Empires Never Sleep ⚔️",
   "scripts": {
-    "survev-setup": "pnpm install && tsx setup.ts",
+    "dystopia-setup": "pnpm install && tsx setup.ts",
     "dev": "concurrently \"pnpm run dev:api\" \"pnpm run dev:game\" \"pnpm run dev:client\"",
     "dev:server": "cd server && pnpm dev",
     "dev:api": "cd server && pnpm dev:api",
@@ -18,10 +18,11 @@
   "engines": {
     "node": ">=20.12.0"
   },
-  "author": "Leia",
+  "author": "Dystopia Studios",
   "license": "GPL-3.0-or-later",
   "devDependencies": {
     "@biomejs/biome": "2.0.5",
+    "@supabase/mcp-server-supabase": "^0.5.5",
     "@types/hjson": "^2.4.6",
     "@types/node": "^22.18.6",
     "concurrently": "^9.2.1",

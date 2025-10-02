@@ -25,7 +25,7 @@ class Region {
                 method: "POST",
                 headers: {
                     "content-type": "application/json",
-                    "survev-api-key": Config.secrets.SURVEV_API_KEY,
+                    "dystopia-api-key": Config.secrets.DYSTOPIA_ETERNAL_API_KEY,
                 },
                 body: JSON.stringify(body),
             });

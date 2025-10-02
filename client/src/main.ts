@@ -34,6 +34,13 @@ import { Pass } from "./ui/pass";
 import { ProfileUi } from "./ui/profileUi";
 import { TeamMenu } from "./ui/teamMenu";
 import { loadStaticDomImages } from "./ui/ui2";
+import { initBuildingSystem } from "./buildingSystem";
+import { initChatSystem } from "./chatSystem";
+import { initTerritorySystem } from "./territorySystem";
+import { initFactionSystem } from "./factionSystem";
+import { initPlayerUISystem } from "./playerUISystem";
+import { AppStateManager, AppState } from "./ui/appState";
+import { FactionValidator } from "./ui/factionValidator";
 
 class Application {
     nameInput = $("#player-name-input-solo");
@@ -41,6 +48,18 @@ class Application {
     playMode0Btn = $("#btn-start-mode-0");
     playMode1Btn = $("#btn-start-mode-1");
     playMode2Btn = $("#btn-start-mode-2");
+    deployNowBtn = $("#btn-deploy-now");
+    factionSelect = $("#faction-select");
+    // Auth UI elements
+    loginScreen = $("#login-screen");
+    mainMenu = $("#main-menu");
+    authUsernameInput = $("#auth-username");
+    authPasswordInput = $("#auth-password");
+    btnAuthLogin = $("#btn-auth-login");
+    btnAuthSignup = $("#btn-auth-signup");
+    btnAuthLogout = $("#btn-auth-logout");
+    authMessage = $("#auth-message");
+    authCurrentUser = $("#auth-current-user");
     muteBtns = $(".btn-sound-toggle");
     aimLineBtn = $("#btn-game-aim-line");
     masterSliders = $<HTMLInputElement>(".sl-master-volume");
@@ -95,6 +114,11 @@ class Application {
     checkedPingTest = false;
     hasFocus = true;
     newsDisplayed = true;
+    // Auth state
+    currentAuthUser: { username: string; playerId: number; faction: string | null } | null = null;
+    // UI State Management
+    appStateManager!: AppStateManager;
+    factionValidator!: FactionValidator;
 
     constructor() {
         this.account = new Account(this.config);
@@ -150,6 +174,21 @@ class Application {
             this.localization.localizeIndex();
             this.account.init();
 
+            // DYSTOPIA ETERNAL: Initialize building system UI
+            initBuildingSystem();
+
+            // DYSTOPIA ETERNAL: Initialize chat system
+            initChatSystem();
+
+            // DYSTOPIA ETERNAL: Initialize territory visualization
+            initTerritorySystem();
+
+            // DYSTOPIA ETERNAL: Initialize faction system
+            initFactionSystem();
+
+            // DYSTOPIA ETERNAL: Initialize player UI system (name tags, health bars)
+            initPlayerUISystem();
+
             this.nameInput.attr("maxLength", net.Constants.PlayerNameMaxLen);
 
             this.playMode0Btn.on("click", () => {
@@ -167,6 +206,28 @@ class Application {
                     this.tryQuickStartGame(2);
                 });
             });
+
+            // Deploy Now button - Persistent World Entry
+            this.deployNowBtn.on("click", () => {
+                const faction = this.factionSelect.val() as string;
+                if (!faction) {
+                    this.errorModal.show("Select Faction", "Please select a faction before deploying!");
+                    return;
+                }
+                // Store faction in config
+                this.config.set("faction", faction);
+                SDK.requestMidGameAd(() => {
+                    this.tryQuickStartGame(0); // Use mode 0 but with faction
+                });
+            });
+
+            // Auth event handlers
+            this.btnAuthLogin.on("click", () => this.handleLogin());
+            this.btnAuthSignup.on("click", () => this.handleSignup());
+            this.btnAuthLogout.on("click", () => this.handleLogout());
+
+            // Load saved auth state from localStorage
+            this.loadAuthState();
 
             this.serverSelect.on("change", () => {
                 const t = this.serverSelect.find(":selected").val();
@@ -313,6 +374,10 @@ class Application {
                 this.onResize();
                 this.findGameAttempts = 0;
                 this.ambience.onGameStart();
+                // Transition to game state
+                if (this.appStateManager) {
+                    this.appStateManager.setState(AppState.GAME, true);
+                }
             };
             const onQuit = (errMsg?: string) => {
                 if (this.game!.m_updatePass) {
@@ -324,6 +389,11 @@ class Application {
                 this.ambience.onGameComplete(this.audioManager);
                 this.setAppActive(true);
                 this.setPlayLockout(false);
+                // Return to menu state
+                if (this.appStateManager) {
+                    const targetState = this.currentAuthUser ? AppState.MENU : AppState.LOGIN;
+                    this.appStateManager.setState(targetState, true);
+                }
                 if (errMsg == "index-invalid-protocol") {
                     this.showInvalidProtocolModal();
                 }
@@ -360,6 +430,17 @@ class Application {
             this.onResize();
             this.tryJoinTeam(false);
             Menu.setupModals(this.inputBinds, this.inputBindUi);
+
+            // Initialize UI state management
+            this.appStateManager = new AppStateManager();
+            this.factionValidator = new FactionValidator(
+                this.factionSelect,
+                this.deployNowBtn,
+                (message) => {
+                    this.errorModal.show("Faction Required", message);
+                }
+            );
+
             this.onConfigModified();
             this.config.addModifiedListener(this.onConfigModified.bind(this));
             loadStaticDomImages();
@@ -546,13 +627,26 @@ class Application {
         this.serverWarning.html(this.errorMessage);
 
         const updateButton = (ele: JQuery<HTMLElement>, gameModeIdx: number) => {
-            ele.html(
-                this.quickPlayPendingModeIdx === gameModeIdx
-                    ? '<div class="ui-spinner"></div>'
-                    : this.localization.translate(ele.data("l10n")),
-            );
+            const l10nKey = ele.data("l10n");
+            if (l10nKey) {
+                ele.html(
+                    this.quickPlayPendingModeIdx === gameModeIdx
+                        ? '<div class="ui-spinner"></div>'
+                        : this.localization.translate(l10nKey),
+                );
+            }
         };
 
+        // Update Deploy Now button
+        if (this.deployNowBtn.length > 0) {
+            this.deployNowBtn.html(
+                this.quickPlayPendingModeIdx === 0
+                    ? '<div class="ui-spinner"></div>'
+                    : 'DEPLOY TO BATTLEGROUND'
+            );
+        }
+
+        // Legacy mode buttons (hidden but still in DOM)
         updateButton(this.playMode0Btn, 0);
         updateButton(this.playMode1Btn, 1);
         updateButton(this.playMode2Btn, 2);
@@ -630,6 +724,7 @@ class Application {
                 zones = [paramZone];
             }
 
+            const faction = this.config.get("faction") as string | undefined;
             const matchArgs: FindGameBody = {
                 version,
                 region,
@@ -637,6 +732,7 @@ class Application {
                 playerCount: 1,
                 autoFill: true,
                 gameModeIdx,
+                faction, // Send faction to server
             };
 
             const tryQuickStartGameImpl = () => {
@@ -847,6 +943,157 @@ class Application {
             this.errorModal.selector.find(".modal-body-text").html(text);
             this.errorModal.show();
         }
+    }
+
+    // Auth methods
+    loadAuthState() {
+        const savedAuth = localStorage.getItem("dystopia_auth");
+        if (savedAuth) {
+            try {
+                this.currentAuthUser = JSON.parse(savedAuth);
+                this.updateAuthUI();
+            } catch (e) {
+                console.error("Failed to load auth state:", e);
+                localStorage.removeItem("dystopia_auth");
+                this.updateAuthUI();
+            }
+        } else {
+            this.updateAuthUI();
+        }
+    }
+
+    saveAuthState() {
+        if (this.currentAuthUser) {
+            localStorage.setItem("dystopia_auth", JSON.stringify(this.currentAuthUser));
+        } else {
+            localStorage.removeItem("dystopia_auth");
+        }
+    }
+
+    updateAuthUI() {
+        if (this.currentAuthUser) {
+            // User is logged in - show main menu
+            if (this.appStateManager) {
+                this.appStateManager.setState(AppState.MENU, true);
+            }
+            this.authCurrentUser.text(this.currentAuthUser.username);
+
+            // Pre-select faction if user has one
+            if (this.currentAuthUser.faction && this.factionValidator) {
+                this.factionValidator.setFaction(this.currentAuthUser.faction);
+            }
+        } else {
+            // User is not logged in - show login screen
+            if (this.appStateManager) {
+                this.appStateManager.setState(AppState.LOGIN, true);
+            }
+            this.authUsernameInput.val("");
+            this.authPasswordInput.val("");
+        }
+    }
+
+    showAuthMessage(message: string, isError: boolean = false) {
+        this.authMessage.text(message);
+        this.authMessage.css("color", isError ? "#FF6B6B" : "#FFD700");
+        setTimeout(() => {
+            this.authMessage.text("");
+        }, 3000);
+    }
+
+    async handleLogin() {
+        const username = this.authUsernameInput.val() as string;
+        const password = this.authPasswordInput.val() as string;
+
+        if (!username || !password) {
+            this.showAuthMessage("Please enter username and password", true);
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/dystopia-auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.player) {
+                this.currentAuthUser = {
+                    username: data.player.username,
+                    playerId: data.player.id,
+                    faction: data.player.faction
+                };
+                this.saveAuthState();
+                this.updateAuthUI();
+                this.showAuthMessage("Login successful!");
+            } else {
+                this.showAuthMessage(data.error || "Login failed", true);
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            this.showAuthMessage("Connection error", true);
+        }
+    }
+
+    async handleSignup() {
+        const username = this.authUsernameInput.val() as string;
+        const password = this.authPasswordInput.val() as string;
+
+        if (!username || !password) {
+            this.showAuthMessage("Please enter username and password", true);
+            return;
+        }
+
+        if (username.length < 3) {
+            this.showAuthMessage("Username must be at least 3 characters", true);
+            return;
+        }
+
+        if (password.length < 6) {
+            this.showAuthMessage("Password must be at least 6 characters", true);
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/dystopia-auth/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username,
+                    password,
+                    displayName: username // Use username as display name for now
+                })
+            });
+
+            const data = await response.json();
+
+            console.log("Signup response:", response.status, data);
+            console.log("Error details:", JSON.stringify(data.error));
+
+            if (data.success && data.player) {
+                this.currentAuthUser = {
+                    username: data.player.username,
+                    playerId: data.player.id,
+                    faction: data.player.faction
+                };
+                this.saveAuthState();
+                this.updateAuthUI();
+                this.showAuthMessage("Account created! Welcome!");
+            } else {
+                this.showAuthMessage(data.error || "Signup failed", true);
+            }
+        } catch (error) {
+            console.error("Signup error:", error);
+            this.showAuthMessage("Connection error", true);
+        }
+    }
+
+    handleLogout() {
+        this.currentAuthUser = null;
+        this.saveAuthState();
+        this.updateAuthUI();
+        this.showAuthMessage("Logged out");
     }
 
     update() {

@@ -30,7 +30,7 @@ export const enum Command {
 
 export const honoClient = hc<PrivateRouteApp>(API_URL, {
     headers: {
-        "survev-api-key": Config.secrets.SURVEV_API_KEY,
+        "dystopia-api-key": Config.secrets.DYSTOPIA_ETERNAL_API_KEY,
     },
 });
 

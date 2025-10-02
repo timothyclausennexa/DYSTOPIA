@@ -1,11 +1,11 @@
 {
-  "name": "bot",
+  "name": "@dystopia/bot",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "start": "tsx src/index.ts",
-    "dev": "tsx watch --clear-screen=false --include '../server/src/api/routes/private/*' --include ../survev-config.hjson src/index.ts",
+    "dev": "tsx watch --clear-screen=false --include '../server/src/api/routes/private/*' --include ../dystopia-config.hjson src/index.ts",
     "register-commands": "tsx src/register-commands.ts"
   },
   "dependencies": {

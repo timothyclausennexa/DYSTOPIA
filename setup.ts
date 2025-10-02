@@ -17,7 +17,7 @@ async function importKeys(config: PartialConfig) {
         type: "text",
         required: true,
     });
-    config.secrets.SURVEV_API_KEY = apiKey.value;
+    config.secrets.DYSTOPIA_ETERNAL_API_KEY = apiKey.value;
 
     const loadoutSecret = await prompt<{ value: string }>({
         message: "Enter Loadout secret:",
@@ -39,7 +39,7 @@ async function importKeys(config: PartialConfig) {
         },
     });
 
-    config.secrets.SURVEV_LOADOUT_SECRET = loadoutSecret.value;
+    config.secrets.DYSTOPIA_ETERNAL_LOADOUT_SECRET = loadoutSecret.value;
 }
 
 async function setupGameServer(config: PartialConfig) {
@@ -132,7 +132,7 @@ async function setupDatabase(config: PartialConfig, initial = true) {
 async function setupAccounts(config: PartialConfig) {
     const redirectURI = await prompt<{ value: string }>({
         message:
-            "Enter the full base URL of the website for oauth2 redirects (eg: https://survev.io)",
+            "Enter the full base URL of the website for oauth2 redirects (eg: https://dystopia.io)",
         name: "value",
         type: "text",
         initial: `http://${config.apiServer?.host ?? "127.0.0.1"}:${config.apiServer?.port ?? 8000}`,
@@ -419,12 +419,12 @@ async function loadExistingConfig(config: PartialConfig) {
 async function setupConfig() {
     const config: PartialConfig = {
         secrets: {
-            SURVEV_API_KEY: randomBytes(64).toString("base64"),
-            SURVEV_LOADOUT_SECRET: randomBytes(32).toString("base64"),
+            DYSTOPIA_ETERNAL_API_KEY: randomBytes(64).toString("base64"),
+            DYSTOPIA_ETERNAL_LOADOUT_SECRET: randomBytes(32).toString("base64"),
         },
     };
 
-    console.log("Welcome to Survev.io initial config setup!");
+    console.log("Welcome to DYSTOPIA.io initial config setup!");
 
     await loadExistingConfig(config);
 
